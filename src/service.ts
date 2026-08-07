@@ -114,11 +114,33 @@ export function toPublic(r: ApprovalRequest): PublicRequest {
   return pub;
 }
 
-/** The amount a human must pay to approve this request, as an x402 price string. */
-export function priceFor(requestId: string): string | undefined {
+/**
+ * The smallest amount x402 will price (`$0.0001` — a hundredth of a cent, 100
+ * atomic USDC units). Used as the challenge price whenever the approve route
+ * cannot be priced from a live pending request: an unknown id, or one already
+ * approved, declined, or expired.
+ *
+ * A paid route must answer an unpaid request with a 402 *before* it validates
+ * anything, so discovery probes and agents always reach a real challenge with
+ * both rails in `accepts` instead of a bare 404. Whether the id exists is the
+ * handler's business, after payment: it answers 404 / 409, or replays the same
+ * grant for an already-approved request. Pricing those cases at the floor keeps
+ * that unavoidable "pay first, find out second" cost down to a rounding error.
+ */
+export const NOMINAL_PRICE = "$0.0001";
+
+/** The same floor as a number, for validating what an agent may ask a human to authorize. */
+export const MIN_AMOUNT_USD = 0.0001;
+
+/**
+ * The amount a human must pay to approve this request, as an x402 price string.
+ * A live pending request is priced at exactly what the agent asked to spend, so
+ * the challenge is the invoice; anything else gets `NOMINAL_PRICE`.
+ */
+export function priceFor(requestId: string): string {
   const r = load().get(requestId);
-  if (!r) return undefined;
-  if (settle(r).decision !== "pending") return undefined; // already decided — not payable
+  if (!r) return NOMINAL_PRICE; // unknown id — the handler 404s once paid
+  if (settle(r).decision !== "pending") return NOMINAL_PRICE; // decided — grant replay or 409
   return `$${r.amountUsd.toFixed(6).replace(/0+$/, "").replace(/\.$/, ".0")}`;
 }
 
@@ -129,6 +151,16 @@ export function create(body: Record<string, unknown>, baseUrl: string) {
   const amountUsd = typeof body.amountUsd === "number" ? body.amountUsd : Number(body.amountUsd);
   if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
     throw new ApprovalError(400, "INVALID_AMOUNT", "amountUsd must be a positive number");
+  }
+  if (amountUsd < MIN_AMOUNT_USD) {
+    // The approval *is* the payment, so an amount x402 cannot invoice is an
+    // approval nobody could ever grant. Refuse it here rather than mint a
+    // request whose 402 challenge would come back with no payable rail.
+    throw new ApprovalError(
+      400,
+      "INVALID_AMOUNT",
+      `amountUsd ${amountUsd} is below the x402 minimum of ${MIN_AMOUNT_USD} USD`,
+    );
   }
   if (amountUsd > MAX_AMOUNT_USD) {
     throw new ApprovalError(

@@ -22,9 +22,14 @@ import {
  *
  * The agent's poll (GET on a request) is a fixed $0.001 for the current signed
  * outcome. The human's approval route is priced at whatever the agent asked them
- * to authorize, so the 402 challenge is itself the invoice. A request that is
- * already decided has no price and falls through to the handler, which answers
- * 409 rather than taking money for nothing.
+ * to authorize, so the 402 challenge is itself the invoice.
+ *
+ * Both routes challenge first and look the request up afterwards: an unpaid call
+ * always gets a 402 with both rails in `accepts`, even for an id that does not
+ * exist, because that is what discovery probes and unfamiliar agents need to
+ * see. An id that is unknown or already decided cannot be invoiced, so it is
+ * challenged at `NOMINAL_PRICE` (one atomic USDC unit) and the handler answers
+ * 404 / 409 — or replays the existing grant — once payment settles.
  */
 const PRICES: RoutePrices = {
   "GET /requests/*": {

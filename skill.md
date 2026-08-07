@@ -117,8 +117,10 @@ Response `200`:
 }
 ```
 
-Idempotent: paying twice returns the same grant rather than minting a second one. A request that
-is already decided or expired has no price and answers `409 ALREADY_DECIDED`.
+Idempotent: paying twice returns the same grant rather than minting a second one. Every unpaid
+call is answered with the 402 challenge first, even for an id that does not exist — a request that
+is unknown or already decided cannot be invoiced, so it is challenged at a nominal `$0.0001`
+and the handler answers `404 NOT_FOUND` / `409 ALREADY_DECIDED` once that payment settles.
 
 ### Free routes
 - `POST /requests/:id/decline` `{note?, agentToken?}` — the human declines, or you withdraw your

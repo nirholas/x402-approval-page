@@ -138,8 +138,11 @@ Verification and settlement go to that rail's facilitator — the server never h
 the Solana lane's sponsor pays the SOL fee, so a paying agent needs only USDC.
 
 The approve route's price is **dynamic**: `maxAmountRequired` is the request's own `amountUsd`
-in atomic units, so the challenge is the invoice. A request that is already decided or expired
-has no price at all and answers `409` rather than taking money for nothing.
+in atomic units, so the challenge is the invoice. Challenge first, validate second — an unpaid
+call always gets a 402 with both rails, even for an id that does not exist, so you can inspect the
+payment requirements before you commit to anything. An unknown or already-decided request has no
+invoice to quote and is challenged at a nominal `$0.0001`; pay that and the handler answers
+`404` / `409`, or replays the existing grant.
 
 ## A note on the links
 

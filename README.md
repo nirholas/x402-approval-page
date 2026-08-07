@@ -69,9 +69,11 @@ curl -s -X POST http://localhost:4040/requests/apr_…/approve | jq '.accepts[] 
 # { "network": "solana",       "maxAmountRequired": "50000" }
 ```
 
-Paying it is idempotent — twice returns the same grant, not a second charge. A request that is
-already decided or expired has **no price at all**: the paywall skips it and the handler answers
-`409` rather than taking money for nothing.
+Paying it is idempotent — twice returns the same grant, not a second charge. The challenge comes
+before the lookup, so an unpaid call always gets a 402 with both rails, even for an id that does
+not exist. A request that is unknown or already decided cannot be invoiced, so it is challenged at
+a nominal **$0.0001**, a hundredth of a cent, and the handler answers `404` / `409` once that
+settles, rather than pretending the route is free.
 
 ## The flow
 

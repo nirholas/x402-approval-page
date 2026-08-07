@@ -166,10 +166,15 @@ person telling the agent what to do instead.
 An agent can withdraw its own request with the `agentToken`. A request nobody touches becomes
 `expired` at its deadline — never silently approvable.
 
-Once decided, the approve route has no price at all:
+Once decided, there is nothing left to invoice, so the approve route drops to a nominal
+`$0.0001` — it still answers with a 402 challenge rather than a bare error, because a paid route
+should always show its payment requirements first:
 
 ```bash
-curl -s -X POST http://localhost:4040/requests/$RID/approve -w " %{http_code}\n"
+curl -s -X POST http://localhost:4040/requests/$RID/approve | jq '.accepts[0].maxAmountRequired'
+# "100"      ← $0.0001 in atomic USDC units, not the original amount
+
+# pay that nominal challenge and the handler tells you why it went nowhere:
 # {"error":"ALREADY_DECIDED","message":"request apr_… is declined"} 409
 ```
 

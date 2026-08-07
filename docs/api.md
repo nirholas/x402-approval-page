@@ -137,8 +137,10 @@ Paying it **is** the approval. The signed grant comes back in the same response.
 ```
 
 Idempotent: paying twice returns the same grant rather than minting a second one or charging
-again. A request that is already decided or expired has **no price** — the paywall skips it and
-the handler answers `409`.
+again. The paywall runs before the lookup, so an unpaid call gets the 402 challenge whether or not
+the id exists. A request that is unknown or already decided has no invoice to quote and is
+challenged at a nominal **$0.0001**; the handler answers `404` / `409` once that payment
+settles.
 
 **Errors**: `402`, `404 NOT_FOUND`, `409 ALREADY_DECIDED`.
 

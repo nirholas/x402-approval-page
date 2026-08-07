@@ -35,8 +35,8 @@
                 "properties": {
                   "amountUsd": {
                     "type": "number",
-                    "exclusiveMinimum": 0,
-                    "description": "Capped by the deployment's MAX_APPROVAL_USD."
+                    "description": "At least $0.0001 (the x402 minimum invoice) and capped by the deployment's MAX_APPROVAL_USD.",
+                    "minimum": 0.0001
                   },
                   "reason": {
                     "type": "string",
@@ -332,7 +332,7 @@
       "post": {
         "summary": "The human's approval — priced at the request's own amountUsd",
         "operationId": "approveRequest",
-        "description": "Priced dynamically at exactly the amount the agent asked a human to authorize, so the 402 challenge is itself the invoice. Paying it IS the approval; the signed grant comes back in the same response. Idempotent — paying twice returns the same grant. A request that is already decided or expired has no price and answers 409.",
+        "description": "Priced dynamically at exactly the amount the agent asked a human to authorize, so the 402 challenge is itself the invoice. Paying it IS the approval; the signed grant comes back in the same response. Idempotent — paying twice returns the same grant. The challenge is returned before the request is looked up, so an unpaid call always gets a 402 with both rails in accepts, even for an id that does not exist; an unknown or already-decided request has no invoice to quote and is challenged at the nominal minimum of $0.0001, after which the handler answers 404 NOT_FOUND or 409 ALREADY_DECIDED.",
         "parameters": [
           {
             "name": "id",
@@ -468,7 +468,7 @@
           "price": {
             "mode": "dynamic",
             "currency": "USD",
-            "min": "0.000001",
+            "min": "0.000100",
             "max": "100.000000"
           },
           "protocols": [

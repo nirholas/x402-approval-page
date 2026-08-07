@@ -60,9 +60,14 @@ const SOLANA_ENABLED = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(SOLANA_PAY_TO);
 /**
  * A route's price. Usually a fixed string like "$0.001"; a function when the
  * amount depends on the request — this service prices an approval at whatever
- * the agent asked a human to authorize. Returning `undefined` from the function
- * means "not payable", and the request falls through to the handler (which then
- * answers 404 / 409 as appropriate).
+ * the agent asked a human to authorize.
+ *
+ * Returning `undefined` makes the route unpayable for that request, which falls
+ * straight through to the handler. Do not use it to reject requests that look
+ * wrong: a paid route must answer with a 402 challenge *before* it validates
+ * anything, or discovery probes (and agents sizing up the route) see a 404
+ * instead of the payment requirements. Price the odd cases nominally and let
+ * the handler decide once payment has settled.
  */
 export type RoutePrice = string | ((req: Request) => string | undefined);
 

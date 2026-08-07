@@ -189,10 +189,14 @@ curl -s -X POST http://localhost:4040/requests/$RID/decline \
   -d '{"agentToken":"agt_…","note":"no longer needed"}' | jq '.payload.decision'
 ```
 
-Once decided, the approve route has no price at all and answers `409`:
+Once decided, there is nothing left to invoice, so the approve route drops to a nominal
+`$0.0001` — the 402 challenge still comes first:
 
 ```bash
-curl -s -X POST http://localhost:4040/requests/$RID/approve -w " %{http_code}\n"
+curl -s -X POST http://localhost:4040/requests/$RID/approve -w " %{http_code}\n" | tail -1
+# 402        ← accepts[0].maxAmountRequired is "100" — $0.0001, the protocol floor
+
+# pay that nominal challenge and the handler explains itself:
 # {"error":"ALREADY_DECIDED","message":"request apr_… is declined"} 409
 ```
 
