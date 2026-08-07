@@ -1,0 +1,1074 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-approval-page",
+    "version": "0.1.0",
+    "description": "Human-in-the-loop checkout: an agent requests approval for a purchase above its spending cap, a human pays via the drop-in payment modal, and the agent fetches the signed outcome. The human's payment IS the approval, so there is no approved-but-unfunded state.  Dual-rail: pay in USDC on Base (EVM) or USDC on Solana — your client picks the rail from the `accepts` array.",
+    "contact": {
+      "name": "nirholas",
+      "email": "nichxbt@gmail.com"
+    },
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4040",
+      "description": "local"
+    }
+  ],
+  "paths": {
+    "/requests": {
+      "post": {
+        "summary": "Open an approval request (free)",
+        "operationId": "createRequest",
+        "description": "Free by design — an agent that has already hit its cap should not have to spend more to ask for help. Returns the link to send a human, the poll URL, and a one-time agentToken.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountUsd": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Capped by the deployment's MAX_APPROVAL_USD."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Why the agent cannot decide alone. Shown prominently to the human."
+                  },
+                  "agent": {
+                    "type": "string"
+                  },
+                  "merchant": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "expiresInSeconds": {
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 86400,
+                    "default": 3600
+                  }
+                },
+                "required": [
+                  "amountUsd",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The request, its links, and the one-time agentToken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_AMOUNT, AMOUNT_TOO_LARGE or REASON_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Recent requests on this deployment (free)",
+        "operationId": "listRequests",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent requests, newest first. Never includes agentToken.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicRequest"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}": {
+      "get": {
+        "summary": "The agent's poll — $0.001",
+        "operationId": "getOutcome",
+        "description": "Buys the current signed approval outcome. A snapshot as of right now, returned in the response body — never a promise of something later.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed outcome",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "base64 JSON settlement receipt: {success, rail, network, transaction, payer}",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "decision": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "declined",
+                            "expired"
+                          ]
+                        },
+                        "amountUsd": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "const": "USD"
+                        },
+                        "merchant": {
+                          "type": "string"
+                        },
+                        "resource": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "decidedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date-time"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "what the human said when declining"
+                        },
+                        "paymentReceipt": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "description": "settlement receipt from the human's payment, present once approved",
+                          "properties": {
+                            "success": {
+                              "type": "boolean"
+                            },
+                            "rail": {
+                              "type": "string",
+                              "enum": [
+                                "evm",
+                                "solana"
+                              ]
+                            },
+                            "network": {
+                              "type": "string"
+                            },
+                            "transaction": {
+                              "type": "string"
+                            },
+                            "payer": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "grantToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "proof a human authorized this purchase; issued on approval"
+                        },
+                        "secondsRemaining": {
+                          "type": "integer"
+                        },
+                        "checkedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "requestId",
+                        "decision",
+                        "amountUsd",
+                        "merchant",
+                        "createdAt",
+                        "expiresAt",
+                        "checkedAt"
+                      ]
+                    },
+                    "signature": {
+                      "type": "string"
+                    },
+                    "algorithm": {
+                      "type": "string",
+                      "const": "HMAC-SHA256"
+                    },
+                    "canonicalization": {
+                      "type": "string",
+                      "const": "sorted-keys-json"
+                    }
+                  },
+                  "required": [
+                    "payload",
+                    "signature",
+                    "algorithm",
+                    "canonicalization"
+                  ]
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required — pay in USDC on Base or Solana",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequirements"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}/approve": {
+      "post": {
+        "summary": "The human's approval — priced at the request's own amountUsd",
+        "operationId": "approveRequest",
+        "description": "Priced dynamically at exactly the amount the agent asked a human to authorize, so the 402 challenge is itself the invoice. Paying it IS the approval; the signed grant comes back in the same response. Idempotent — paying twice returns the same grant. A request that is already decided or expired has no price and answers 409.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed grant",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "base64 JSON settlement receipt: {success, rail, network, transaction, payer}",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "decision": {
+                          "type": "string",
+                          "const": "approved"
+                        },
+                        "amountUsd": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "const": "USD"
+                        },
+                        "merchant": {
+                          "type": "string"
+                        },
+                        "resource": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "approvedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "grantToken": {
+                          "type": "string"
+                        },
+                        "paymentReceipt": {
+                          "type": [
+                            "object",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "requestId",
+                        "decision",
+                        "amountUsd",
+                        "approvedAt",
+                        "grantToken"
+                      ]
+                    },
+                    "signature": {
+                      "type": "string"
+                    },
+                    "algorithm": {
+                      "type": "string",
+                      "const": "HMAC-SHA256"
+                    },
+                    "canonicalization": {
+                      "type": "string",
+                      "const": "sorted-keys-json"
+                    }
+                  },
+                  "required": [
+                    "payload",
+                    "signature",
+                    "algorithm",
+                    "canonicalization"
+                  ]
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required — the amount under discussion, on Base or Solana",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequirements"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_DECIDED — approved, declined or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}/decline": {
+      "post": {
+        "summary": "Decline, or withdraw your own request (free)",
+        "operationId": "declineRequest",
+        "description": "Never charged — nobody should pay to say no. An agent withdrawing its own request proves it with the agentToken.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "What to tell the agent."
+                  },
+                  "agentToken": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "decision": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "declined",
+                            "expired"
+                          ]
+                        },
+                        "amountUsd": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "const": "USD"
+                        },
+                        "merchant": {
+                          "type": "string"
+                        },
+                        "resource": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "decidedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date-time"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "what the human said when declining"
+                        },
+                        "paymentReceipt": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "description": "settlement receipt from the human's payment, present once approved",
+                          "properties": {
+                            "success": {
+                              "type": "boolean"
+                            },
+                            "rail": {
+                              "type": "string",
+                              "enum": [
+                                "evm",
+                                "solana"
+                              ]
+                            },
+                            "network": {
+                              "type": "string"
+                            },
+                            "transaction": {
+                              "type": "string"
+                            },
+                            "payer": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "grantToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "proof a human authorized this purchase; issued on approval"
+                        },
+                        "secondsRemaining": {
+                          "type": "integer"
+                        },
+                        "checkedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "requestId",
+                        "decision",
+                        "amountUsd",
+                        "merchant",
+                        "createdAt",
+                        "expiresAt",
+                        "checkedAt"
+                      ]
+                    },
+                    "signature": {
+                      "type": "string"
+                    },
+                    "algorithm": {
+                      "type": "string",
+                      "const": "HMAC-SHA256"
+                    },
+                    "canonicalization": {
+                      "type": "string",
+                      "const": "sorted-keys-json"
+                    }
+                  },
+                  "required": [
+                    "payload",
+                    "signature",
+                    "algorithm",
+                    "canonicalization"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "BAD_AGENT_TOKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_DECIDED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/a/{id}": {
+      "get": {
+        "summary": "The page a human opens (free)",
+        "operationId": "approvalPage",
+        "description": "Server-rendered so the person sees this specific request — who is asking, for what, how much, and why — before any wallet appears. Carries the drop-in payment modal wired to the approve route.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The approval page",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verify": {
+      "post": {
+        "summary": "Verify a grant or outcome signature (free)",
+        "operationId": "verifyArtifact",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payload": {
+                    "type": "object"
+                  },
+                  "signature": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "payload",
+                  "signature"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "canonical": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Liveness (free)",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "rails": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "summary": "Discovery manifest (free)",
+        "operationId": "manifest",
+        "responses": {
+          "200": {
+            "description": "x402 discovery manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicRequest": {
+        "type": "object",
+        "description": "An approval request as anyone holding the link may see it. Never includes agentToken.",
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "agent": {
+            "type": "string"
+          },
+          "merchant": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "amountUsd": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "const": "USD"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "declined",
+              "expired"
+            ]
+          },
+          "decidedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paymentReceipt": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "grantToken": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "requestId",
+          "amountUsd",
+          "decision",
+          "createdAt",
+          "expiresAt"
+        ]
+      },
+      "CreatedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PublicRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "links": {
+                "type": "object",
+                "properties": {
+                  "approvalUrl": {
+                    "type": "string",
+                    "description": "Send this to the human."
+                  },
+                  "pollUrl": {
+                    "type": "string",
+                    "description": "The agent polls this — $0.001 a look."
+                  },
+                  "payUrl": {
+                    "type": "string",
+                    "description": "Where the human's payment lands."
+                  }
+                }
+              },
+              "agentToken": {
+                "type": "string",
+                "description": "Returned exactly once. Lets the agent withdraw its own request."
+              },
+              "signature": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "x402 payment requirements returned with HTTP 402. `accepts` always lists both rails (USDC on Base and USDC on Solana); the client settles whichever one it can and retries with an X-PAYMENT header.",
+        "properties": {
+          "x402Version": {
+            "type": "integer",
+            "example": 1
+          },
+          "error": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "mimeType": {
+                "type": "string"
+              }
+            }
+          },
+          "accepts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentRequirement"
+            }
+          }
+        },
+        "required": [
+          "x402Version",
+          "accepts"
+        ],
+        "example": {
+          "x402Version": 1,
+          "error": "Payment required — pay in USDC on Base or Solana; your client picks the rail.",
+          "accepts": [
+            {
+              "scheme": "exact",
+              "network": "base-sepolia",
+              "maxAmountRequired": "1000",
+              "resource": "http://localhost:4021/example",
+              "description": "Example paid resource",
+              "mimeType": "application/json",
+              "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+              "maxTimeoutSeconds": 60,
+              "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+              "extra": {
+                "name": "USDC",
+                "version": "2"
+              }
+            },
+            {
+              "scheme": "exact",
+              "network": "solana",
+              "maxAmountRequired": "1000",
+              "amount": "1000",
+              "resource": "http://localhost:4021/example",
+              "description": "Example paid resource",
+              "mimeType": "application/json",
+              "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+              "maxTimeoutSeconds": 60,
+              "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "extra": {
+                "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4",
+                "name": "USDC",
+                "decimals": 6
+              }
+            }
+          ]
+        }
+      },
+      "PaymentRequirement": {
+        "type": "object",
+        "description": "One accepted payment rail.",
+        "properties": {
+          "scheme": {
+            "type": "string",
+            "example": "exact"
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "base-sepolia",
+              "base",
+              "solana",
+              "solana-devnet"
+            ]
+          },
+          "maxAmountRequired": {
+            "type": "string",
+            "description": "Atomic units (USDC has 6 decimals)."
+          },
+          "amount": {
+            "type": "string",
+            "description": "Alias of maxAmountRequired, read by browser checkout clients."
+          },
+          "resource": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "payTo": {
+            "type": "string",
+            "description": "0x address on EVM rails, base58 address on Solana."
+          },
+          "maxTimeoutSeconds": {
+            "type": "integer"
+          },
+          "asset": {
+            "type": "string",
+            "description": "USDC contract address (EVM) or mint (Solana)."
+          },
+          "extra": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "scheme",
+          "network",
+          "maxAmountRequired",
+          "resource",
+          "payTo",
+          "asset"
+        ]
+      }
+    }
+  }
+}

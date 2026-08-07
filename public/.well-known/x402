@@ -1,0 +1,114 @@
+{
+  "x402Version": 1,
+  "name": "x402-approval-page",
+  "description": "Human-in-the-loop checkout: agent requests approval above its cap, human pays via the drop-in modal, agent fetches the signed outcome",
+  "paymentRails": "Pay in USDC on Base or Solana — your client picks the rail.",
+  "contact": "nichxbt@gmail.com",
+  "accepts": [
+    { "network": "base-sepolia", "asset": "USDC", "assetAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+    { "network": "base", "asset": "USDC", "assetAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+    { "network": "solana", "asset": "USDC", "assetAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW" }
+  ],
+  "resources": [
+    {
+      "resource": "GET /requests/{id}",
+      "description": "The agent's poll. Buys the current signed approval outcome: pending, approved (with the grant token and the human's on-chain payment receipt), declined (with their note), or expired. A snapshot, returned in-response — never a promise of something later.",
+      "price": "$0.001",
+      "networks": ["base-sepolia", "base", "solana"],
+      "asset": "USDC",
+      "accepts": [
+        { "network": "base-sepolia", "asset": "USDC", "assetAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+        { "network": "base", "asset": "USDC", "assetAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+        { "network": "solana", "asset": "USDC", "assetAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW" }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string" },
+              "decision": { "type": "string", "enum": ["pending", "approved", "declined", "expired"] },
+              "amountUsd": { "type": "number" },
+              "currency": { "type": "string", "const": "USD" },
+              "merchant": { "type": "string" },
+              "resource": { "type": "string" },
+              "description": { "type": "string" },
+              "reason": { "type": "string" },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "expiresAt": { "type": "string", "format": "date-time" },
+              "decidedAt": { "type": ["string", "null"], "format": "date-time" },
+              "note": { "type": ["string", "null"], "description": "what the human said when declining" },
+              "paymentReceipt": {
+                "type": ["object", "null"],
+                "description": "settlement receipt from the human's payment, present once approved",
+                "properties": {
+                  "success": { "type": "boolean" },
+                  "rail": { "type": "string", "enum": ["evm", "solana"] },
+                  "network": { "type": "string" },
+                  "transaction": { "type": "string" },
+                  "payer": { "type": "string" }
+                }
+              },
+              "grantToken": { "type": ["string", "null"], "description": "proof a human authorized this purchase; issued on approval" },
+              "secondsRemaining": { "type": "integer" },
+              "checkedAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["requestId", "decision", "amountUsd", "merchant", "createdAt", "expiresAt", "checkedAt"]
+          },
+          "signature": { "type": "string" },
+          "algorithm": { "type": "string", "const": "HMAC-SHA256" },
+          "canonicalization": { "type": "string", "const": "sorted-keys-json" }
+        },
+        "required": ["payload", "signature", "algorithm", "canonicalization"]
+      }
+    },
+    {
+      "resource": "POST /requests/{id}/approve",
+      "description": "The human's approval. Priced dynamically at the exact amount the agent asked them to authorize, so the 402 challenge is itself the invoice — paying it IS the approval. Returns the signed grant in the same response. A request that is already decided or expired is not payable and answers 409.",
+      "price": "the request's own amountUsd",
+      "priceIsDynamic": true,
+      "networks": ["base-sepolia", "base", "solana"],
+      "asset": "USDC",
+      "accepts": [
+        { "network": "base-sepolia", "asset": "USDC", "assetAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+        { "network": "base", "asset": "USDC", "assetAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402" },
+        { "network": "solana", "asset": "USDC", "assetAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW" }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string" },
+              "decision": { "type": "string", "const": "approved" },
+              "amountUsd": { "type": "number" },
+              "currency": { "type": "string", "const": "USD" },
+              "merchant": { "type": "string" },
+              "resource": { "type": "string" },
+              "description": { "type": "string" },
+              "approvedAt": { "type": "string", "format": "date-time" },
+              "expiresAt": { "type": "string", "format": "date-time" },
+              "grantToken": { "type": "string" },
+              "paymentReceipt": { "type": ["object", "null"] }
+            },
+            "required": ["requestId", "decision", "amountUsd", "approvedAt", "grantToken"]
+          },
+          "signature": { "type": "string" },
+          "algorithm": { "type": "string", "const": "HMAC-SHA256" },
+          "canonicalization": { "type": "string", "const": "sorted-keys-json" }
+        },
+        "required": ["payload", "signature", "algorithm", "canonicalization"]
+      }
+    }
+  ],
+  "freeResources": [
+    { "resource": "POST /requests", "description": "Open an approval request. Free — an agent that has already hit its cap should not have to spend more to ask for help. Returns the approval link, the poll URL, and a one-time agentToken." },
+    { "resource": "POST /requests/{id}/decline", "description": "Decline a request, with an optional note back to the agent. Free — nobody should pay to say no." },
+    { "resource": "GET /a/{id}", "description": "The page a human opens: who is asking, for what, how much, why, and a pay-or-decline choice." },
+    { "resource": "GET /requests", "description": "Recent requests on this deployment (no secrets)." },
+    { "resource": "POST /verify", "description": "Verify any grant or outcome this service signed." },
+    { "resource": "GET /health", "description": "Liveness." }
+  ]
+}
