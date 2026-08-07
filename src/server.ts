@@ -3,6 +3,7 @@ import express from "express";
 import { join } from "node:path";
 import { renderApprovalPage } from "./page.js";
 import { paywall, railSummary, type RoutePrices } from "./payments.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 import {
   ApprovalError,
   approve,
@@ -29,10 +30,12 @@ const PRICES: RoutePrices = {
   "GET /requests/*": {
     price: "$0.001",
     description: "Signed approval outcome — approved (with grant + receipt), declined, pending, or expired",
+    ...ROUTE_SCHEMAS["GET /requests/*"],
   },
   "POST /requests/*/approve": {
     price: (req) => priceFor(String(req.path.split("/")[2] ?? "")),
     description: "Human approval — paying this is the approval; returns the signed grant",
+    ...ROUTE_SCHEMAS["POST /requests/*/approve"],
   },
 };
 

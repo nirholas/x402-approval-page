@@ -111,6 +111,7 @@ export function renderApprovalPage(r: PublicRequest, checkoutOrigin: string): st
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Approve ${esc(money(r.amountUsd))} — ${esc(r.merchant)}</title>
 <meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>${STYLE}</style>
 </head>
 <body>

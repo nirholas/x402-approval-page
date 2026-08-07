@@ -90,7 +90,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       },
       "get": {
         "summary": "Recent requests on this deployment (free)",
@@ -126,7 +127,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/requests/{id}": {
@@ -461,6 +463,19 @@
               }
             }
           }
+        },
+        "x-payment-info": {
+          "price": {
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "0.000001",
+            "max": "100.000000"
+          },
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         }
       }
     },
@@ -668,7 +683,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/a/{id}": {
@@ -707,7 +723,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/verify": {
@@ -765,7 +782,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/health": {
@@ -797,7 +815,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/.well-known/x402": {
@@ -815,7 +834,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     }
   },
