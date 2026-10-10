@@ -179,3 +179,26 @@ Questions, bugs, integration help: **nichxbt@gmail.com**
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=nirholas/x402-approval-page&type=Date)](https://www.star-history.com/#nirholas/x402-approval-page&Date)
+
+<!-- three.ws:growth -->
+## Support the project
+
+If x402-approval-page saves you time, **[star it on GitHub](https://github.com/nirholas/x402-approval-page)**. Stars are how other developers and AI agents find the repositories worth trusting, and they cost you one click.
+
+Know someone who would use it? [Post on X](https://twitter.com/intent/tweet?text=x402-approval-page%3A%20Human-in-the-loop%20checkout%3A%20agent%20requests%20approval%20above%20its%20cap%2C%20human%20pays%20via%20the%20drop-in&url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fx402-approval-page) · [Share on Bluesky](https://bsky.app/intent/compose?text=x402-approval-page%3A%20Human-in-the-loop%20checkout%3A%20agent%20requests%20approval%20above%20its%20cap%2C%20human%20pays%20via%20the%20drop-in%20https%3A%2F%2Fgithub.com%2Fnirholas%2Fx402-approval-page) · [Share on LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fx402-approval-page) · [Submit to Hacker News](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fnirholas%2Fx402-approval-page&t=x402-approval-page%3A%20Human-in-the-loop%20checkout%3A%20agent%20requests%20approval%20above%20its%20cap%2C%20human%20pays%20via%20the%20drop-in) · [Share on Reddit](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fx402-approval-page&title=x402-approval-page%3A%20Human-in-the-loop%20checkout%3A%20agent%20requests%20approval%20above%20its%20cap%2C%20human%20pays%20via%20the%20drop-in)
+
+## Built for AI agents too
+
+Coding agents and LLM tooling can read this repo directly: [AGENTS.md](./AGENTS.md), [llms.txt](./llms.txt), [llms-full.txt](./llms-full.txt). Point an agent at `https://github.com/nirholas/x402-approval-page` and it has the context it needs.
+
+## More from the same author
+
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme): the full catalog, grouped by topic
+- [three.ws](https://three.ws): the platform for 3D AI agents with Solana wallets, a skill marketplace and x402 payments
+- Questions or ideas: [open an issue](https://github.com/nirholas/x402-approval-page/issues) or [start a discussion](https://github.com/nirholas/x402-approval-page/discussions)
+
+## Contributors
+
+[![Contributors](https://contrib.rocks/image?repo=nirholas/x402-approval-page)](https://github.com/nirholas/x402-approval-page/graphs/contributors)
+
+<!-- /three.ws:growth -->

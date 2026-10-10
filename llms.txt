@@ -1,0 +1,28 @@
+# x402-approval-page
+
+> Human-in-the-loop checkout: agent requests approval above its cap, human pays via the drop-in modal, agent fetches the signed outcome
+
+x402-approval-page is an open-source repository by nirholas, part of the three.ws ecosystem.
+
+## Docs
+
+- [README](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md): install, usage and reference
+- [Why x402 for this](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#why-x402-for-this)
+- [Quickstart](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#quickstart)
+- [API](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#api)
+- [The dynamic price](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#the-dynamic-price)
+- [The flow](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#the-flow)
+- [How x402 works](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#how-x402-works)
+- [Human checkout](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#human-checkout)
+- [Real backend / API keys](https://github.com/nirholas/x402-approval-page/blob/HEAD/README.md#real-backend-api-keys)
+- [AGENTS.md](https://github.com/nirholas/x402-approval-page/blob/HEAD/AGENTS.md): guidance for coding agents
+- [Full text for LLMs](https://github.com/nirholas/x402-approval-page/blob/HEAD/llms-full.txt): the README inlined
+
+## Project
+
+- [Source](https://github.com/nirholas/x402-approval-page)
+- [Issues](https://github.com/nirholas/x402-approval-page/issues)
+- [Discussions](https://github.com/nirholas/x402-approval-page/discussions)
+- [Homepage](https://nirholas.github.io/x402-approval-page/)
+- [three.ws](https://three.ws): the platform this is part of
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme)

@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "x402-approval-page"
+abstract: "Human-in-the-loop checkout: agent requests approval above its cap, human pays via the drop-in modal, agent fetches the signed outcome"
+license: Apache-2.0
+repository-code: "https://github.com/nirholas/x402-approval-page"
+url: "https://three.ws"
+authors:
+  - name: three.ws
+    website: "https://three.ws"
