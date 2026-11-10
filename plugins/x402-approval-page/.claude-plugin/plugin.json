@@ -1,0 +1,18 @@
+{
+  "name": "x402-approval-page",
+  "version": "0.1.0",
+  "description": "Human-in-the-loop checkout over x402: an agent asks for approval above its cap and a person pays to approve.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-approval-page",
+  "homepage": "https://nirholas.github.io/x402-approval-page/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "approval",
+    "human-in-the-loop",
+    "payments",
+    "agents"
+  ]
+}
